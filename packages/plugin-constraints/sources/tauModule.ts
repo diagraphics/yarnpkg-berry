@@ -1,7 +1,7 @@
 /// <reference path="./tauProlog.d.ts"/>
 
 import {Project, structUtils} from '@yarnpkg/core';
-import {PortablePath}         from '@yarnpkg/fslib';
+import {CwdFS, PortablePath}  from '@yarnpkg/fslib';
 import getPath                from 'lodash/get';
 import pl                     from 'tau-prolog';
 import vm                     from 'vm';
@@ -142,11 +142,29 @@ const tauModule = new pl.type.Module(`constraints`, {
       thread.success(point);
     }
   },
+
+  [`exists_workspace_file/2`]: function(thread, point, atom) {
+    const [ workspaceCwd, filePath ] = atom.args;
+
+    if (!isAtom(workspaceCwd) || !isAtom(filePath)) {
+      thread.throw_error(pl.error.instantiation(atom.indicator));
+      return;
+    }
+
+    const fs = new CwdFS(workspaceCwd.id as PortablePath);
+
+    const res = fs.existsSync(filePath.id as PortablePath);
+
+    if (res) {
+      thread.success(point);
+    }
+  },
 }, [
   `project_workspaces_by_descriptor/3`,
   `workspace_field/3`,
   `workspace_field_test/3`,
   `workspace_field_test/4`,
+  `exists_workspace_file/2`
 ]);
 
 export function linkProjectToSession(session: pl.type.Session, project: Project) {
